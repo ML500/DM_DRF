@@ -1,5 +1,5 @@
 from django.db import models
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, viewsets
 # from rest_framework.response import Response
 # from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,11 +14,9 @@ from .serializer import (
 from .service import get_client_ip, MovieFilter
 
 
-class MovieListView(generics.ListAPIView):
-    serializer_class = MovieListSerializer
+class MovieViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (DjangoFilterBackend,)
-    filterset_class = MovieFilter
-    # permission_classes = [permissions.IsAuthenticated]
+    filter_class = MovieFilter
 
     def get_queryset(self):
         movies = Movie.objects.filter(draft=False).annotate(
@@ -28,23 +26,53 @@ class MovieListView(generics.ListAPIView):
         )
         return movies
 
-    # def get(self, request):
-    #     movies = Movie.objects.filter(draft=False).annotate(
-    #         rating_user=models.Case(
-    #             models.When(ratings__ip=get_client_ip(request), then=True),
-    #                 default=False,
-    #                 output_field=models.BooleanField()
-    #             ),
-    #     )
-    # APIView
-    # def get(self, request):
-    #     movies = Movie.objects.filter(draft=False).annotate(
-    #         rating_user=models.Count("ratings", filter=models.Q(ratings__ip=get_client_ip(request)))
-    #     ).annotate(
-    #         middle_star=models.Sum(models.F('ratings__star')) / models.Count(models.F('ratings'))
-    #     )
-    #     serializer = MovieListSerializer(movies, many=True)
-    #     return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MovieListSerializer
+        elif self.action == "retrieve":
+            return MovieDetailSerializer
+
+
+class ReviewCreateViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewCreateSerializer
+
+
+class AddStarRatingViewSet(viewsets.ModelViewSet):
+    serializer_class = CreateRatingSerializer
+
+
+# class MovieListView(generics.ListAPIView):
+#     serializer_class = MovieListSerializer
+#     filter_backends = (DjangoFilterBackend,)
+#     filterset_class = MovieFilter
+#
+#     # permission_classes = [permissions.IsAuthenticated]
+#
+#     def get_queryset(self):
+#         movies = Movie.objects.filter(draft=False).annotate(
+#             rating_user=models.Count("ratings", filter=models.Q(ratings__ip=get_client_ip(self.request)))
+#         ).annotate(
+#             middle_star=models.Sum(models.F('ratings__star')) / models.Count(models.F('ratings'))
+#         )
+#         return movies
+
+# def get(self, request):
+#     movies = Movie.objects.filter(draft=False).annotate(
+#         rating_user=models.Case(
+#             models.When(ratings__ip=get_client_ip(request), then=True),
+#                 default=False,
+#                 output_field=models.BooleanField()
+#             ),
+#     )
+# APIView
+# def get(self, request):
+#     movies = Movie.objects.filter(draft=False).annotate(
+#         rating_user=models.Count("ratings", filter=models.Q(ratings__ip=get_client_ip(request)))
+#     ).annotate(
+#         middle_star=models.Sum(models.F('ratings__star')) / models.Count(models.F('ratings'))
+#     )
+#     serializer = MovieListSerializer(movies, many=True)
+#     return Response(serializer.data)
 
 
 # class MovieDetailView(APIView):
